@@ -125,6 +125,8 @@ class Provider {
     this.online = false,
     this.zone = 'default',
     this.documents = const [],
+    this.locationLat,
+    this.locationLng,
   });
 
   factory Provider.fromJson(Map<String, dynamic> j) => Provider(
@@ -141,6 +143,12 @@ class Provider {
         verified: j['verified'] == true,
         online: j['online'] == true,
         zone: _s(j['zone'], 'default'),
+        locationLat: (j['location'] is Map)
+            ? (j['location']['lat'] as num?)?.toDouble()
+            : null,
+        locationLng: (j['location'] is Map)
+            ? (j['location']['lng'] as num?)?.toDouble()
+            : null,
         documents: (j['documents'] as List?)
                 ?.whereType<String>()
                 .toList() ??
@@ -158,6 +166,9 @@ class Provider {
   final bool online;
   /// Namespace slug; pre-zone payloads read as the default zone.
   final String zone;
+  /// Last reported location (provider location updates).
+  final double? locationLat;
+  final double? locationLng;
   /// Uploaded document URLs (licence, RC) for the verify step.
   final List<String> documents;
 
