@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 import '../api/api_client.dart';
+import 'package:pns/pns.dart';
 
 /// Caller role, mirroring the server `AuthRole`.
 enum AuthRole { user, provider, staff, service }
@@ -72,6 +73,10 @@ class Session {
     required this.baseUrl,
     required this.clientId,
     required this.role,
+    this.pushBaseUrl = const String.fromEnvironment(
+      'PUSH_BASE_URL',
+      defaultValue: 'http://10.0.2.2:8080',
+    ),
     TokenStore? store,
     http.Client? client,
     this.onAuthLoss,
@@ -79,6 +84,7 @@ class Session {
        _client = client ?? http.Client();
 
   final String baseUrl;
+  final String pushBaseUrl;
 
   /// Registry client id (`user-android`, `provider-android`,
   /// `teams-android`): stamped into `aud`/`client_id` on verify, login
@@ -168,11 +174,19 @@ class Session {
             'install-${DateTime.now().millisecondsSinceEpoch}-${role.name}';
         await _store.write('install', install);
       }
-      final api = await this.api;
-      await api.post(
-        '/devices',
-        body: {'token': install, 'platform': 'android'},
-      );
+      // Register with the devstroop push service (pns). Best-effort:
+      // failures are non-fatal so login never blocks on push.
+      try {
+        final pns = PnsClient(baseUrl: pushBaseUrl);
+        await pns
+            .registerDevice(
+              userId: (await subject()) ?? role.name,
+              platform: 'android',
+              transport: 'fcm', // fallback until real FCM token wiring
+              token: install,
+            )
+            .timeout(const Duration(seconds: 2));
+      } catch (_) {}
     } catch (_) {}
   }
 
