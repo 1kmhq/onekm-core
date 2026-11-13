@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  pns:
+    path: ../../pns/sdk/flutter/pns
   connectivity_plus: ^7.0.0
   flutter_secure_storage: ^11.0.0
   flutter_svg: ^2.0.0
